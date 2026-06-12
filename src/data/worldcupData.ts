@@ -35,7 +35,7 @@ export interface Match {
   status: 'scheduled' | 'played';
 }
 
-export const teams: Team[] = [
+export const staticTeams: Team[] = [
   // Group A
   { id: 'usa', name: 'ABD', code: 'USA', flag: '🇺🇸', group: 'A', fifaRank: 11, coach: 'Mauricio Pochettino', keyPlayer: 'Christian Pulisic', description: 'Kuzey Amerika\'nın ev sahibi devi, genç ve dinamik kadrosuyla turnuvada derin bir yürüyüş hedefliyor.' },
   { id: 'mexico', name: 'Meksika', code: 'MEX', flag: '🇲🇽', group: 'A', fifaRank: 15, coach: 'Javier Aguirre', keyPlayer: 'Santiago Giménez', description: 'Ortak ev sahiplerinden Meksika, ateşli taraftarı önünde turnuvada tarih yazmak istiyor.' },
@@ -287,15 +287,17 @@ export const initialMatches: Match[] = [
 ];
 
 export const getTeamById = (id: string): Team | undefined => {
-  return teams.find(t => t.id === id);
+  return getStoredTeams().find(t => t.id === id);
 };
 
 export const getTeamsByGroup = (group: string): Team[] => {
-  return teams.filter(t => t.group === group);
+  return getStoredTeams().filter(t => t.group === group);
 };
 
 export const getMatchesByGroup = (group: string): Match[] => {
-  return initialMatches.filter(m => m.group === group);
+  const stored = localStorage.getItem('wc2026_live_matches');
+  const matches = stored ? JSON.parse(stored) : initialMatches;
+  return matches.filter((m: Match) => m.group === group);
 };
 
 export const getStandingsByGroup = (group: string): GroupStanding[] => {
@@ -320,4 +322,16 @@ export const initialVotes: Record<string, number> = {
   uruguay: 550,
   colombia: 490,
   belgium: 410
+};
+
+export const getStoredTeams = (): Team[] => {
+  const stored = localStorage.getItem('wc2026_live_teams');
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error('Error parsing stored teams', e);
+    }
+  }
+  return staticTeams;
 };

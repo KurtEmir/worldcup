@@ -212,3 +212,73 @@ body {
 .text-glow-gold {
   text-shadow: 0 0 10px rgba(223, 163, 36, 0.5);
 }
+
+/* Modal Overlay and Content Animations */
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-scale-up {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(5, 8, 7, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: modal-fade-in 0.2s ease-out;
+}
+
+.modal-content {
+  background: rgba(10, 18, 14, 0.95);
+  border: 1px solid rgba(15, 169, 88, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(15, 169, 88, 0.1);
+  border-radius: 20px;
+  width: 95%;
+  max-width: 500px;
+  padding: 2rem;
+  position: relative;
+  animation: modal-scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #f3f4f6;
+}
+
+/* Custom switch tab style inside modal */
+.modal-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-tab-btn {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  color: #9ca3af;
+}
+
+.modal-tab-btn.active {
+  background: rgba(15, 169, 88, 0.2);
+  color: #0fa958;
+  border: 1px solid rgba(15, 169, 88, 0.15);
+}
+

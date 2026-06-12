@@ -1,13 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { HomeOrbit } from './components/HomeOrbit';
 import { Groups } from './components/Groups';
 import { PredictionGame } from './components/PredictionGame';
+import { CouponBuilder } from './components/CouponBuilder';
+import { fetchLiveMatches, simulateLiveScoreUpdate } from './services/apiService';
 import { Trophy, Globe } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [compareCode, setCompareCode] = useState<string | null>(null);
+
+  // Initialize live data fetching & simulate live matches in the background
+  useEffect(() => {
+    // Attempt initial live API fetch
+    fetchLiveMatches();
+
+    // Start background simulation loop for live score updates
+    const stopSimulation = simulateLiveScoreUpdate(() => {
+      // Let localStorage notify and components auto-refresh via polling
+    });
+
+    return () => {
+      stopSimulation();
+    };
+  }, []);
+
+  // Parse comparison coupon parameters from URL query string
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const compare = params.get('compare');
+    if (compare) {
+      setCompareCode(compare);
+      setActiveTab('coupons');
+    }
+  }, []);
+
+  const handleClearCompareCode = () => {
+    setCompareCode(null);
+    // Remove query parameter cleanly from browser history without page reload
+    window.history.replaceState({}, document.title, window.location.pathname);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -27,6 +61,13 @@ function App() {
         );
       case 'predictions':
         return <PredictionGame />;
+      case 'coupons':
+        return (
+          <CouponBuilder 
+            compareCode={compareCode} 
+            onClearCompareCode={handleClearCompareCode} 
+          />
+        );
       default:
         return (
           <HomeOrbit 

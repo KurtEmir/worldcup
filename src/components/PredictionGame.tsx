@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { teams, initialVotes, Team } from '../data/worldcupData';
+import { getStoredTeams, initialVotes, Team } from '../data/worldcupData';
 import { Vote, Search, RotateCcw, Play, Square, Award, Users } from 'lucide-react';
 
 export const PredictionGame: React.FC = () => {
+  const teams = getStoredTeams();
   const [userVote, setUserVote] = useState<string | null>(null);
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [searchTerm, setSearchTerm] = useState('');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { teams, Team } from '../data/worldcupData';
+import { getStoredTeams, Team } from '../data/worldcupData';
 import { ArrowRight, Trophy, Users, X } from 'lucide-react';
 
 interface HomeOrbitProps {
@@ -16,6 +16,7 @@ const FEATURED_TEAM_IDS = [
 ];
 
 export const HomeOrbit: React.FC<HomeOrbitProps> = ({ onSelectGroup, setActiveTab }) => {
+  const teams = getStoredTeams();
   const [hoveredTeam, setHoveredTeam] = useState<Team | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [showAllTeams, setShowAllTeams] = useState(false);
@@ -186,8 +187,6 @@ export const HomeOrbit: React.FC<HomeOrbitProps> = ({ onSelectGroup, setActiveTa
         {/* Orbit Visualization (Left on desktop) */}
         <div 
           className="orbit-container-wrapper"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
         >
           {/* Central Trophy */}
           <div style={{
@@ -227,8 +226,14 @@ export const HomeOrbit: React.FC<HomeOrbitProps> = ({ onSelectGroup, setActiveTa
                   key={team.id}
                   className="orbit-item"
                   style={{ '--angle': angle } as React.CSSProperties}
-                  onMouseEnter={() => setHoveredTeam(team)}
-                  onMouseLeave={() => setHoveredTeam(null)}
+                  onMouseEnter={() => {
+                    setHoveredTeam(team);
+                    setIsPaused(true);
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredTeam(null);
+                    setIsPaused(false);
+                  }}
                   onClick={() => handleTeamClick(team)}
                 >
                   {/* Counter-rotating badge so label remains upright */}

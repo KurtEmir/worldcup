@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
-import { teams, getTeamsByGroup, getMatchesByGroup, getStandingsByGroup, Team } from '../data/worldcupData';
-import { Shield, MapPin, Calendar, Clock, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { getStoredTeams, getTeamsByGroup, Team } from '../data/worldcupData';
+import { Shield, MapPin, Calendar, Clock, ChevronLeft, RefreshCw } from 'lucide-react';
+import { getStoredMatches, calculateStandings, resetLiveMatches } from '../services/apiService';
 
 interface GroupsProps {
   selectedGroup: string | null;
@@ -8,7 +9,9 @@ interface GroupsProps {
 }
 
 export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup }) => {
+  const teams = getStoredTeams();
   const allGroups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+  const [liveMatches, setLiveMatches] = useState<any[]>([]);
 
   // Scroll to top when group is changed
   useEffect(() => {
@@ -17,8 +20,29 @@ export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup 
     }
   }, [selectedGroup]);
 
+  // Read matches from localStorage and setup poll
+  useEffect(() => {
+    setLiveMatches(getStoredMatches());
+
+    const interval = setInterval(() => {
+      setLiveMatches(getStoredMatches());
+    }, 2000); // Poll localStorage updates every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleResetScores = () => {
+    if (window.confirm('Tüm canlı skorları sıfırlayıp turnuvayı başlangıç durumuna getirmek istediğinize emin misiniz?')) {
+      const reset = resetLiveMatches();
+      setLiveMatches(reset);
+    }
+  };
+
   // If no group is selected, show grid of all groups
   if (!selectedGroup) {
+    // Generate standings object
+    const currentStandings = calculateStandings(liveMatches);
+
     return (
       <section className="animate-fade-in" style={{
         maxWidth: '1200px',
@@ -29,13 +53,43 @@ export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup 
         gap: '2rem'
       }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.5rem' }}>
-            Grup Aşaması Puan Durumu
-          </h2>
-          <p style={{ color: '#9ca3af', fontSize: '0.95rem' }}>
-            48 takımın kıyasıya mücadele ettiği 12 grubu inceleyin. Puan durumlarını, oynanan maçları ve fikstürü görmek için bir grubun üzerine tıklayın.
-          </p>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+          paddingBottom: '1rem'
+        }}>
+          <div>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Shield size={24} color="#0fa958" />
+              Grup Aşaması Puan Durumu
+            </h2>
+            <p style={{ color: '#9ca3af', fontSize: '0.95rem', marginTop: '0.25rem' }}>
+              48 takımın kıyasıya mücadele ettiği 12 grubu inceleyin. Puan durumunu görmek için grubun üzerine tıklayın.
+            </p>
+          </div>
+
+          <button
+            onClick={handleResetScores}
+            className="btn-secondary"
+            style={{
+              padding: '0.6rem 1.2rem',
+              borderRadius: '12px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              color: '#ef4444'
+            }}
+          >
+            <RefreshCw size={14} />
+            Canlı Skorları Sıfırla
+          </button>
         </div>
 
         {/* Groups Grid */}
@@ -47,8 +101,9 @@ export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup 
         }}>
           {allGroups.map(groupName => {
             const groupTeams = getTeamsByGroup(groupName);
-            // Sort by rank in initialStandings
-            const standings = getStandingsByGroup(groupName);
+            const standings = currentStandings[groupName] || [];
+            
+            // Sort by standing rank
             const sortedTeams = [...groupTeams].sort((a, b) => {
               const standingA = standings.find(s => s.teamId === a.id);
               const standingB = standings.find(s => s.teamId === b.id);
@@ -140,8 +195,8 @@ export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup 
   }
 
   // Group Detail View
-  const standings = getStandingsByGroup(selectedGroup);
-  const matches = getMatchesByGroup(selectedGroup);
+  const standings = calculateStandings(liveMatches)[selectedGroup] || [];
+  const groupMatches = liveMatches.filter(m => m.group === selectedGroup);
 
   // Sort teams based on standings data
   const sortedStandings = [...standings].sort((a, b) => {
@@ -237,7 +292,7 @@ export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup 
             gap: '0.5rem'
           }}>
             <Shield size={18} color="#0fa958" />
-            Puan Durumu
+            Puan Durumu (Canlı)
           </h3>
 
           <table className="standings-table">
@@ -316,7 +371,7 @@ export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup 
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {matches.map(match => {
+            {groupMatches.map(match => {
               const homeTeam = teams.find(t => t.id === match.homeTeamId) as Team;
               const awayTeam = teams.find(t => t.id === match.awayTeamId) as Team;
 
@@ -385,8 +440,8 @@ export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup 
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: 'rgba(15, 169, 88, 0.15)',
-                      border: '1px solid rgba(15, 169, 88, 0.25)',
+                      background: match.status === 'played' ? 'rgba(15, 169, 88, 0.15)' : 'rgba(223, 163, 36, 0.1)',
+                      border: match.status === 'played' ? '1px solid rgba(15, 169, 88, 0.25)' : '1px solid rgba(223, 163, 36, 0.25)',
                       padding: '0.25rem 0.75rem',
                       borderRadius: '8px',
                       fontSize: '1.1rem',
@@ -399,7 +454,7 @@ export const Groups: React.FC<GroupsProps> = ({ selectedGroup, setSelectedGroup 
                       {match.status === 'played' ? (
                         <span>{match.homeScore}-{match.awayScore}</span>
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.8rem', color: '#0fa958' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.8rem', color: '#dfa324' }}>
                           <Clock size={12} />
                           <span>{match.time}</span>
                         </div>
